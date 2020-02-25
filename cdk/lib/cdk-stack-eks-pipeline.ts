@@ -8,6 +8,9 @@ import iam = require('@aws-cdk/aws-iam');
 import codebuild = require('@aws-cdk/aws-codebuild');
 import codecommit = require('@aws-cdk/aws-codecommit');
 import targets = require('@aws-cdk/aws-events-targets');
+import codepipeline = require('@aws-cdk/aws-codepipeline');
+import codepipeline_actions = require('@aws-cdk/aws-codepipeline-actions');
+
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -42,15 +45,25 @@ export class CdkStack extends cdk.Stack {
       outputClusterName: true,
     });
 
-    const ecrRepo = new ecr.Repository(this, 'EcrRepo')
+    const ecrRepo = new ecr.Repository(this, 'EcrRepo');
 
     const repository = new codecommit.Repository(this, 'CodeCommitRepo', {
       repositoryName: `${this.stackName}-repo`
-    })
+    });
+
+
+    // AWS CodePipeline stage to clone sources from CodeCommit repository
+    const sourceOutput = new codepipeline.Artifact();
+    const sourceAction = new codepipeline_actions.CodeCommitSourceAction({
+      actionName: 'CodeCommit',
+      repository: repository,
+      output: sourceOutput,
+    });
 
     const project = new codebuild.Project(this, 'MyProject', {
       projectName: `${this.stackName}`,
       source: codebuild.Source.codeCommit({ repository }),
+      buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromAsset(this, 'CustomImage', {
           directory: '../dockerAssets.d',
@@ -65,33 +78,56 @@ export class CdkStack extends cdk.Stack {
           value: `${ecrRepo.repositoryUri}`
         }
       },
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: "0.2",
-        phases: {
-          pre_build: {
-            commands: [
-              'env',
-              'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-              '/usr/local/bin/entrypoint.sh'
-            ]
-          },
-          build: {
-            commands: [
-              'cd flask-docker-app',
-              `docker build -t $ECR_REPO_URI:$TAG .`,
-              '$(aws ecr get-login --no-include-email)',
-              'docker push $ECR_REPO_URI:$TAG'
-            ]
-          },
-          post_build: {
-            commands: [
-              'kubectl get no',
-              'kubectl set image deployment flask flask=$ECR_REPO_URI:$TAG'
-            ]
-          }
-        }
-      })
-    })
+      // buildSpec: codebuild.BuildSpec.fromObject({
+      //   version: "0.2",
+      //   phases: {
+      //     pre_build: {
+      //       commands: [
+      //         'env',
+      //         'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+      //         '/usr/local/bin/entrypoint.sh'
+      //       ]
+      //     },
+      //     build: {
+      //       commands: [
+      //         'cd flask-docker-app',
+      //         `docker build -t $ECR_REPO_URI:$TAG .`,
+      //         '$(aws ecr get-login --no-include-email)',
+      //         'docker push $ECR_REPO_URI:$TAG'
+      //       ]
+      //     },
+      //     post_build: {
+      //       commands: [
+      //         'kubectl get no',
+      //         'kubectl set image deployment flask flask=$ECR_REPO_URI:$TAG'
+      //       ]
+      //     }
+      //   }
+      // })
+
+    });
+
+    const buildAction = new codepipeline_actions.CodeBuildAction({
+      actionName: 'CodeBuild',
+      project,
+      input: sourceOutput,
+      outputs: [new codepipeline.Artifact()], // optional
+    });
+
+    const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
+      pipelineName: 'Pipeline',
+      restartExecutionOnUpdate: true,
+    });
+
+    pipeline.addStage({
+      stageName: 'Source',
+      actions: [sourceAction]
+    });
+
+    pipeline.addStage({
+      stageName: 'Build',
+      actions: [buildAction]
+    });
 
     repository.onCommit('OnCommit', {
       target: new targets.CodeBuildProject(codebuild.Project.fromProjectArn(this, 'OnCommitEvent', project.projectArn))
