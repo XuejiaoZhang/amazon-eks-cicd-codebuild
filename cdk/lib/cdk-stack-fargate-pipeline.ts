@@ -143,8 +143,9 @@ export class CdkStack extends cdk.Stack {
           pre_build: {
             commands: [
               'env',
-              'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-              '/usr/local/bin/entrypoint.sh'
+             // 'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+              'export TAG=latest',
+              '/usr/local/bin/entrypoint-ecs.sh'
             ]
           },
           build: {
@@ -186,7 +187,7 @@ export class CdkStack extends cdk.Stack {
 
     pipeline.addStage({
       stageName: 'Source',
-      actions: [sourceAction, sourceActionECR]
+      actions: [sourceAction]
     });
 
     pipeline.addStage({
@@ -239,6 +240,8 @@ export class CdkStack extends cdk.Stack {
         value: this.stackName
     })
 
+    
+    // manually create the file: imagedefinitions.json
     let codeCommitHint = `
 Create a "imagedefinitions.json" file and git add/push into CodeCommit repository "${this.stackName}-repo" with the following value:
 
