@@ -62,8 +62,8 @@ export class CdkStack extends cdk.Stack {
 
     const project = new codebuild.Project(this, 'MyProject', {
       projectName: `${this.stackName}`,
-      source: codebuild.Source.codeCommit({ repository }),
-      buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
+      // source: codebuild.Source.codeCommit({ repository }),
+      // buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromAsset(this, 'CustomImage', {
           directory: '../dockerAssets.d',
@@ -78,32 +78,32 @@ export class CdkStack extends cdk.Stack {
           value: `${ecrRepo.repositoryUri}`
         }
       },
-      // buildSpec: codebuild.BuildSpec.fromObject({
-      //   version: "0.2",
-      //   phases: {
-      //     pre_build: {
-      //       commands: [
-      //         'env',
-      //         'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-      //         '/usr/local/bin/entrypoint.sh'
-      //       ]
-      //     },
-      //     build: {
-      //       commands: [
-      //         'cd flask-docker-app',
-      //         `docker build -t $ECR_REPO_URI:$TAG .`,
-      //         '$(aws ecr get-login --no-include-email)',
-      //         'docker push $ECR_REPO_URI:$TAG'
-      //       ]
-      //     },
-      //     post_build: {
-      //       commands: [
-      //         'kubectl get no',
-      //         'kubectl set image deployment flask flask=$ECR_REPO_URI:$TAG'
-      //       ]
-      //     }
-      //   }
-      // })
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: "0.2",
+        phases: {
+          pre_build: {
+            commands: [
+              'env',
+              'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+              '/usr/local/bin/entrypoint.sh'
+            ]
+          },
+          build: {
+            commands: [
+              'cd flask-docker-app',
+              `docker build -t $ECR_REPO_URI:$TAG .`,
+              '$(aws ecr get-login --no-include-email)',
+              'docker push $ECR_REPO_URI:$TAG'
+            ]
+          },
+          post_build: {
+            commands: [
+              'kubectl get no',
+              'kubectl set image deployment flask flask=$ECR_REPO_URI:$TAG'
+            ]
+          }
+        }
+      })
 
     });
 

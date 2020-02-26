@@ -15,4 +15,8 @@ phases:
   post-build:
     commands:
       - kubectl get no
+      # - kubectl apply -f ../flask-docker-app/k8s/flask.yaml
+      # - kubectl delete svc/flask-svc deploy/flask
+      # - sleep 30
+      # - kubectl get svc,deploy
       - kubectl set image deployment flask flask=$ECR_REPO_URI:$TAG
