@@ -22,6 +22,7 @@ ADD https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/am
 WORKDIR $HOME
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY entrypoint-ecs.sh /usr/local/bin/entrypoint-ecs.sh
 
 RUN chmod a+x /usr/local/bin/kubectl /usr/local/bin/entrypoint.sh
 
