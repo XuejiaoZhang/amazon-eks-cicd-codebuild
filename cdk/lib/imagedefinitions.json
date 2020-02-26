@@ -1,6 +1,0 @@
-[
-  {
-    "name": "flask-docker-app",
-    "imageUri": "323080756126.dkr.ecr.us-east-2.amazonaws.com/cdkst-ecrre-1akib0nfuif9b:latest"
-  }
-]
