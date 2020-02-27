@@ -59,7 +59,10 @@ export class CdkStack extends cdk.Stack {
 
     // build and upload an image directly from a Dockerfile in the source directory
     const taskContainer = taskDefinition.addContainer('flask-docker-app', {
-        image: ecs.ContainerImage.fromAsset(__dirname + '/../../flask-docker-app/')
+        image: ecs.ContainerImage.fromAsset(__dirname + '/../../flask-docker-app/'),
+        environment: {
+          PLATFORM: 'Amazon ECS Fargate'
+        },
     });
 
     taskContainer.addPortMappings({
@@ -123,12 +126,19 @@ export class CdkStack extends cdk.Stack {
       projectName: `${this.stackName}`,            
       //source: codebuild.Source.codeCommit({ repository }),
       //buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
+
+      // default buildImage: LinuxBuildImage.STANDARD_1_0
+      // needed, error: Invalid input: cannot use a CodeBuild curated image with imagePullCredentialsType SERVICE_ROLE
+      // environment: {
+      //   buildImage: codebuild.LinuxBuildImage.STANDARD_2_0,
+      // },
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromAsset(this, 'CustomImage', {
           directory: '../dockerAssets.d',
         }),
         privileged: true
       },
+
       environmentVariables: {
         'CLUSTER_NAME': {
           value: `${cluster.clusterName}`
@@ -143,8 +153,8 @@ export class CdkStack extends cdk.Stack {
           pre_build: {
             commands: [
               'env',
-             // 'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-              'export TAG=latest',
+              'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+              //'export TAG=latest',
               '/usr/local/bin/entrypoint-ecs.sh'
             ]
           },
@@ -155,17 +165,27 @@ export class CdkStack extends cdk.Stack {
               '$(aws ecr get-login --no-include-email)',
               'docker push $ECR_REPO_URI:$TAG'
             ]
+          },
+          post_build: {
+            commands: [
+              'printf \'[{"name":"flask-docker-app","imageUri":"%s"}]\' ${ECR_REPO_URI}:${TAG} >../imagedefinitions.json',
+            ]
           }
+        },
+        artifacts: {
+          files: [
+            './imagedefinitions.json' // artifacts 相对根目录
+          ]
         }
       })
-
     });
 
+    const buildOutput = new codepipeline.Artifact();
     const buildAction = new codepipeline_actions.CodeBuildAction({
       actionName: 'CodeBuild',
-      project,
+      project: project,
       input: sourceOutput,
-      outputs: [new codepipeline.Artifact()], // optional
+      outputs: [buildOutput],
     });
 
 
@@ -205,7 +225,7 @@ export class CdkStack extends cdk.Stack {
                 // if your file is called imagedefinitions.json,
                 // use the `input` property,
                 // and leave out the `imageFile` property
-                input: sourceOutput,
+                input: buildOutput,
                 // if your file name is _not_ imagedefinitions.json,
                 // use the `imageFile` property,
                 // and leave out the `input` property
@@ -239,24 +259,6 @@ export class CdkStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'StackName', {
         value: this.stackName
     })
-
-    
-    // manually create the file: imagedefinitions.json
-    let codeCommitHint = `
-Create a "imagedefinitions.json" file and git add/push into CodeCommit repository "${this.stackName}-repo" with the following value:
-
-[
-{
-"name": "flask-docker-app",
-"imageUri": "${ecrRepo.repositoryUri}:latest"
-}
-]
-`
-    new cdk.CfnOutput(this, 'Hint', {
-        value: codeCommitHint
-    })
-
-
 
     new cdk.CfnOutput(this, 'CodeCommitRepoName', { value: `${repository.repositoryName}` })
     new cdk.CfnOutput(this, 'CodeCommitRepoArn', { value: `${repository.repositoryArn}` })
