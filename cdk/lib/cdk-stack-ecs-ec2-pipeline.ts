@@ -215,6 +215,9 @@ export class CdkStack extends cdk.Stack {
       projectName: `${this.stackName}`,            
       //source: codebuild.Source.codeCommit({ repository }),
       //buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
+
+      // default buildImage: codebuild.BuildEnvironment.LinuxBuildImage.STANDARD_1_0
+      // needed, error: Invalid input: cannot use a CodeBuild curated image with imagePullCredentialsType SERVICE_ROLE
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromAsset(this, 'CustomImage', {
           directory: '../dockerAssets.d',
@@ -262,15 +265,13 @@ export class CdkStack extends cdk.Stack {
       })
     });
 
+    const buildOutput = new codepipeline.Artifact();
     const buildAction = new codepipeline_actions.CodeBuildAction({
       actionName: 'CodeBuild',
-      project,
+      project: project,
       input: sourceOutput,
-      outputs: [new codepipeline.Artifact()], // optional
+      outputs: [buildOutput],
     });
-
-
-
 
     const sourceOutputEcr = new codepipeline.Artifact();
     const sourceActionECR = new codepipeline_actions.EcrSourceAction({
@@ -306,7 +307,8 @@ export class CdkStack extends cdk.Stack {
                 // if your file is called imagedefinitions.json,
                 // use the `input` property,
                 // and leave out the `imageFile` property
-                input: sourceOutput,
+                // The input artifact that contains the JSON image definitions file to use for deployments.
+                input: buildOutput
                 // if your file name is _not_ imagedefinitions.json,
                 // use the `imageFile` property,
                 // and leave out the `input` property
