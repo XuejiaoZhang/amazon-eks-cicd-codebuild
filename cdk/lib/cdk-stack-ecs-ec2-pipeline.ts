@@ -136,6 +136,8 @@ export class CdkStack extends cdk.Stack {
         Overrides: instanceTypes.map(t => ({ InstanceType: t.toString() }))
       }
     }); 
+    // ECS cluster：3 instanceType 为 m5.large 的EC2
+
 
 
     const logGroupName = this.stackName
@@ -216,14 +218,18 @@ export class CdkStack extends cdk.Stack {
       //source: codebuild.Source.codeCommit({ repository }),
       //buildSpec: codebuild.BuildSpec.fromSourceFilename('./cdk/lib/buildspec.yml'),
 
-      // default buildImage: codebuild.BuildEnvironment.LinuxBuildImage.STANDARD_1_0
+      // default buildImage: LinuxBuildImage.STANDARD_1_0
       // needed, error: Invalid input: cannot use a CodeBuild curated image with imagePullCredentialsType SERVICE_ROLE
+      // environment: {
+      //   buildImage: codebuild.LinuxBuildImage.STANDARD_2_0,
+      // },
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromAsset(this, 'CustomImage', {
           directory: '../dockerAssets.d',
         }),
         privileged: true
       },
+
       environmentVariables: {
         'CLUSTER_NAME': {
           value: `${cluster.clusterName}`
@@ -253,13 +259,18 @@ export class CdkStack extends cdk.Stack {
           },
           post_build: {
             commands: [
-              'printf \'[{"name":"flask-docker-app","imageUri":"${ecrRepo.repositoryUri}:latest"}]\' >imagedefinitions.json',
+              'printf \'[{"name":"flask-docker-app","imageUri":"%s"}]\' ${ECR_REPO_URI}:${TAG} >../imagedefinitions.json',
+              'cat ../imagedefinitions.json',
+              'ls -al',
+              'pwd',
+              'ls -al ..',
             ]
           }
         },
         artifacts: {
+          //base-directory: '../',
           files: [
-            'imagedefinitions.json'
+            './imagedefinitions.json' // artifacts 相对根目录
           ]
         }
       })
