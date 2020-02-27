@@ -153,7 +153,7 @@ export class CdkStack extends cdk.Stack {
         image: ecs.ContainerImage.fromAsset(__dirname + '/../../flask-docker-app/'),
         memoryReservationMiB: 512,
         environment: {
-          PLATFORM: 'Amazon ECS'
+          PLATFORM: 'Amazon ECS EC2'
         },
         logging: ecs.LogDrivers.firelens({
           options: {
@@ -244,8 +244,8 @@ export class CdkStack extends cdk.Stack {
           pre_build: {
             commands: [
               'env',
-             // 'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-              'export TAG=latest',
+              'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+              //'export TAG=latest',
               '/usr/local/bin/entrypoint-ecs.sh'
             ]
           },
@@ -260,15 +260,10 @@ export class CdkStack extends cdk.Stack {
           post_build: {
             commands: [
               'printf \'[{"name":"flask-docker-app","imageUri":"%s"}]\' ${ECR_REPO_URI}:${TAG} >../imagedefinitions.json',
-              'cat ../imagedefinitions.json',
-              'ls -al',
-              'pwd',
-              'ls -al ..',
             ]
           }
         },
         artifacts: {
-          //base-directory: '../',
           files: [
             './imagedefinitions.json' // artifacts 相对根目录
           ]
@@ -353,23 +348,6 @@ export class CdkStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'StackName', {
         value: this.stackName
     })
-
-    
-    // manually create the file: imagedefinitions.json
-    let codeCommitHint = `
-Create a "imagedefinitions.json" file and git add/push into CodeCommit repository "${this.stackName}-repo" with the following value:
-
-[
-{
-"name": "flask-docker-app",
-"imageUri": "${ecrRepo.repositoryUri}:latest"
-}
-]
-`
-    new cdk.CfnOutput(this, 'Hint', {
-        value: codeCommitHint
-    })
-
 
     new cdk.CfnOutput(this, 'CloudwatchLogGrupURL', {
       value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#logStream:group=${logGroupName}`
