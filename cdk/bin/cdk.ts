@@ -4,8 +4,9 @@ import cdk = require('@aws-cdk/core');
 
 // import { CdkStack } from '../lib/cdk-stack';
 // import { CdkStack } from '../lib/cdk-stack-eks-pipeline';
+// import { CdkStack } from '../lib/cdk-stack-fargate-pipeline';
 
-import { CdkStack } from '../lib/cdk-stack-fargate-pipeline';
+import { CdkStack } from '../lib/cdk-stack-ecs-ec2-pipeline';
 
 const app = new cdk.App();
 
