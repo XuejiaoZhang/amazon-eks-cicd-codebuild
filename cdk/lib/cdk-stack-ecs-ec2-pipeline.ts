@@ -253,6 +253,11 @@ export class CdkStack extends cdk.Stack {
               'printf \'[{"name":"flask-docker-app","imageUri":"${ecrRepo.repositoryUri}:latest"}]\' >imagedefinitions.json',
             ]
           }
+        },
+        artifacts: {
+          files: [
+            'imagedefinitions.json'
+          ]
         }
       })
     });
