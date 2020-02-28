@@ -54,7 +54,7 @@ export class CodePipelineStack extends cdk.Stack {
         },
         artifacts: {
           'base-directory': 'cdk',
-          files: 'AppServiceDeployStack.template.yaml',
+          files: 'AppServiceDeployStack.template.json',
         },
       }),
     });
@@ -152,7 +152,7 @@ export class CodePipelineStack extends cdk.Stack {
             new codepipeline_actions.CloudFormationCreateUpdateStackAction({
               actionName: 'CFN_Deploy',
               stackName: 'AppServiceDeployStack',
-              templatePath: cdkBuildOutput.atPath('AppServiceDeployStack.template.yaml'),
+              templatePath: cdkBuildOutput.atPath('AppServiceDeployStack.template.json'),
               adminPermissions: true,
               // parameterOverrides: {
               //   [this.builtImage.paramName]: dockerBuildOutput.getParam('imageTag.json', 'imageTag'),
