@@ -63,11 +63,16 @@ import { InfraStack } from '../lib/infra-stack';
 
 new IaCPipelineStack(app, 'IaCPipeline');
 
-new InfraStack(app, 'InfraStack', {
-    env: { account: process.env['CDK_DEFAULT_ACCOUNT'], region: 'us-east-2' },
-    tags: {
-        project: "cdk8s-test"
-    }
-});
+// new InfraStack(app, 'InfraStack', {
+//     env: { account: process.env['CDK_DEFAULT_ACCOUNT'], region: 'us-east-2' },
+//     tags: {
+//         project: "cdk8s-test"
+//     }
+// });
 
+
+import { AppStack } from '../lib/app-pipeline';
+
+
+new AppStack(app, 'AppStack');
 

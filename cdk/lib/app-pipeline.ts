@@ -5,30 +5,30 @@ import actions = require('@aws-cdk/aws-codepipeline-actions');
 import iam = require('@aws-cdk/aws-iam');
 import { CDKCfnPipeline } from './pipeline';
 
-export class IaCPipelineStack extends cdk.Stack {
+export class AppStack extends cdk.Stack {
     constructor(parent: cdk.App, name: string, props?: cdk.StackProps) {
         super(parent, name, props);
 
         const pipelineConstruct = new CDKCfnPipeline(this, 'Pipeline', {
-            pipelineName: 'infra-as-a-code',
-            stackName: 'IaC',
+            pipelineName: 'app',
+            stackName: 'App',
             templateName: 'AppStack',
             directory: 'cdk'
         });
         const pipeline = pipelineConstruct.pipeline;
 
-        const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
-            buildSpec: codebuild.BuildSpec.fromSourceFilename('cdk/buildspec.yml'),
-            environment: {
-                buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_10_1_0,
-                environmentVariables: {
-                    'AWS_DEFAULT_REGION': {
-                        value: 'us-east-2'
-                    }
-                },
-                privileged: true
-            }
-        });
+        // const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
+        //     buildSpec: codebuild.BuildSpec.fromSourceFilename('cdk/buildspec.yml'),
+        //     environment: {
+        //         buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_10_1_0,
+        //         environmentVariables: {
+        //             'AWS_DEFAULT_REGION': {
+        //                 value: 'us-east-2'
+        //             }
+        //         },
+        //         privileged: true
+        //     }
+        // });
 
         // lexProject.addToRolePolicy(new iam.PolicyStatement({
         //     actions: [
@@ -48,15 +48,15 @@ export class IaCPipelineStack extends cdk.Stack {
         //     })]
         // }));
 
-        const deployAction = new actions.CodeBuildAction({
-            actionName: 'Deploy',
-            project: buildProject,
-            input: pipelineConstruct.sourceOutput
-        });
+        // const deployAction = new actions.CodeBuildAction({
+        //     actionName: 'Deploy',
+        //     project: buildProject,
+        //     input: pipelineConstruct.sourceOutput
+        // });
 
-        pipeline.addStage({
-            stageName: 'DeployHelloK8s',
-            actions: [deployAction]
-        });
+        // pipeline.addStage({
+        //     stageName: 'DeployHelloK8s',
+        //     actions: [deployAction]
+        // });
     }
 }

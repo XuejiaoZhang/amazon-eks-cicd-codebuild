@@ -3,6 +3,7 @@ import codebuild = require('@aws-cdk/aws-codebuild');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import actions = require('@aws-cdk/aws-codepipeline-actions');
 import cdk = require('@aws-cdk/core');
+import iam = require('@aws-cdk/aws-iam');
 
 export interface CDKCfnPipelineProps {
     stackName: string;
@@ -41,18 +42,78 @@ export class CDKCfnPipeline extends cdk.Construct {
         this.sourceOutput = sourceOutput;
 
         // Build
-        const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
-            buildSpec: codebuild.BuildSpec.fromSourceFilename(props.directory + '/buildspec.yml'),
-            environment: {
-              buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_10_1_0,
-              environmentVariables: {
-                'ARTIFACTS_BUCKET': {
-                    value: pipeline.artifactBucket.bucketName
-                }
+        // const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
+        //     buildSpec: codebuild.BuildSpec.fromSourceFilename(props.directory + '/buildspec.yml'),
+        //     environment: {
+        //       buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_10_1_0,
+        //       environmentVariables: {
+        //         'ARTIFACTS_BUCKET': {
+        //             value: pipeline.artifactBucket.bucketName
+        //         }
+        //       },
+        //       privileged: true
+        //     }
+        // });
+
+        const templatePrefix =  props.templateName; // InfraStack
+
+        const buildProject = new codebuild.PipelineProject(this, 'CdkBuildProject', {
+          environment: {
+            buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_NODEJS_8_11_0,
+            privileged: true,
+          },
+          buildSpec: codebuild.BuildSpec.fromObject({
+            version: '0.2',
+            phases: {
+              install: {
+                commands: [
+                  'cd cdk',
+                  'npm install',
+                ],
               },
-              privileged: true
-            }
+              build: {
+                commands: [
+                  'npm run build',
+                  'npm run cdk synth '+ templatePrefix +' -- -o .',
+                  'ls -al',
+                //  'cat AppStack.template.json'
+                ],
+              }
+            },
+            artifacts: {
+              'base-directory': 'cdk',
+              files: '*', //InfraStack.template.json
+            },
+          }),
         });
+
+        //
+
+
+        buildProject.addToRolePolicy(new iam.PolicyStatement({
+            resources: ['*'],
+            actions: ['s3:*', 'ec2:*', 'iam:*', 'eks:*', 'ecr:*']
+        }));
+
+        // buildProject.addToRolePolicy(new iam.PolicyStatement(PolicyStatementEffect.Allow)
+        //     .addResource('*')
+        //     .addAction('ec2:*')
+        // );
+
+        // buildProject.addToRolePolicy(new iam.PolicyStatement(PolicyStatementEffect.Allow)
+        //     .addResource('*')
+        //     .addAction('iam:*')
+        // );
+
+        // buildProject.addToRolePolicy(new iam.PolicyStatement(PolicyStatementEffect.Allow)
+        //     .addResource('*')
+        //     .addAction('eks:*')
+        // );
+
+        // buildProject.addToRolePolicy(new iam.PolicyStatement(PolicyStatementEffect.Allow)
+        //     .addResource('*')
+        //     .addAction('ecr:*')
+        // );
 
         const buildArtifact = new codepipeline.Artifact('BuildArtifact');
         const buildAction = new actions.CodeBuildAction({
@@ -68,28 +129,40 @@ export class CDKCfnPipeline extends cdk.Construct {
         });
 
         // Test
-        const templatePrefix =  props.templateName; // InfraStack
+        
         const testStackName = 'CDK' + props.stackName + 'Test';
         const changeSetName = 'StagedChangeSet';
 
+
+
+
+        pipeline.addToRolePolicy(new iam.PolicyStatement({
+            resources: ['*'],
+            actions: ['s3:*']
+        }));
+
+
+
+
         pipeline.addStage({
             stageName: 'Test',
-            actions: [
-
+            actions: [ 
 
                 new actions.CloudFormationCreateUpdateStackAction({
-                  actionName: 'CFN_Deploy',
-                  stackName: 'InfraDeployStack',
-                  //templatePath: buildArtifact.atPath(templatePrefix + '.template.json'),
-                  templatePath: buildArtifact.atPath('InfraStack.template.json'),
+                    actionName: 'CFN_Deploy',
+                    stackName: 'InfraDeployStack',
+                    templatePath: buildArtifact.atPath(templatePrefix + '.template.json'),
+                    //templatePath: buildArtifact.atPath('InfraStack.template.json'),
 
-                  adminPermissions: true,
-                  // parameterOverrides: {
-                  //   [this.builtImage.paramName]: dockerBuildOutput.getParam('imageTag.json', 'imageTag'),
-                  //   // ...this.builtImage.assing(dockerBuildOutput)
-                  // },
-                  //extraInputs: [buildArtifact],
-              })
+                    adminPermissions: true,
+
+                    // parameterOverrides: {
+                    //   [this.builtImage.paramName]: dockerBuildOutput.getParam('imageTag.json', 'imageTag'),
+                    //   // ...this.builtImage.assing(dockerBuildOutput)
+                    // },
+                    extraInputs: [buildArtifact],
+                })
+
                 // new actions.CloudFormationCreateReplaceChangeSetAction({
                 //     actionName: 'PrepareChangesTest',
                 //     stackName: testStackName,
