@@ -1,0 +1,63 @@
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: hello1B298237
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello-hello-service-cf7c398a
+---
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello1B298237
+  template:
+    metadata:
+      labels:
+        app: hello1B298237
+    spec:
+      containers:
+        - name: hello
+          image: paulbouwer/hello-kubernetes:1.5
+          ports:
+            - containerPort: 8080
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: hello-hello-deployment-83984d2d
+---
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 2368
+  selector:
+    app: helloghost5C3C6254
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello-ghost-service-cbacde01
+---
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloghost5C3C6254
+  template:
+    metadata:
+      labels:
+        app: helloghost5C3C6254
+    spec:
+      containers:
+        - name: ghost
+          image: ghost
+          ports:
+            - containerPort: 2368
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: hello-ghost-deployment-f639d16c

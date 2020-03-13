@@ -30,18 +30,18 @@ export class CdkStack extends cdk.Stack {
      * Create a new VPC with single NAT Gateway
      */
     const vpc = new ec2.Vpc(this, 'NewVPC', {
-      cidr: '10.0.0.0/16',
+      cidr: '10.1.0.0/16',
       natGateways: 1
     })
 
-    const clusterAdmin = new iam.Role(this, 'AdminRole', {
-      assumedBy: new iam.AccountRootPrincipal()
-    });
+    // const clusterAdmin = new iam.Role(this, 'AdminRole', {
+    //   assumedBy: new iam.AccountRootPrincipal()
+    // });
 
     const cluster = new eks.Cluster(this, 'Cluster', {
       vpc,
       defaultCapacity: 2,
-      mastersRole: clusterAdmin,
+      // mastersRole: clusterAdmin,
       outputClusterName: true,
     });
 
@@ -74,6 +74,9 @@ export class CdkStack extends cdk.Stack {
         'CLUSTER_NAME': {
           value: `${cluster.clusterName}`
         },
+        // 'EKS_ROLE_ARN': { // for entrypoint.sh
+        //   value: 'arn:aws:iam::323080756126:role/InfraStack-AdminRole38563C57-1O2Z9VOUQSV70' // from InfraStack output
+        // },
         'ECR_REPO_URI': {
           value: `${ecrRepo.repositoryUri}`
         }
@@ -85,7 +88,10 @@ export class CdkStack extends cdk.Stack {
             commands: [
               'env',
               'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-              '/usr/local/bin/entrypoint.sh'
+              '/usr/local/bin/entrypoint.sh',
+              'aws sts get-caller-identity',
+              'kubectl get no',
+              // 'cat $HOME/.kube/kubeconfig'
             ]
           },
           build: {

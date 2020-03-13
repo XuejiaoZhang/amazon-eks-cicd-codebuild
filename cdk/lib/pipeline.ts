@@ -90,10 +90,10 @@ export class CDKCfnPipeline extends cdk.Construct {
         //
 
 
-        buildProject.addToRolePolicy(new iam.PolicyStatement({
-            resources: ['*'],
-            actions: ['s3:*', 'ec2:*', 'iam:*', 'eks:*', 'ecr:*']
-        }));
+        // buildProject.addToRolePolicy(new iam.PolicyStatement({
+        //     resources: ['*'],
+        //     actions: ['s3:*', 'ec2:*', 'iam:*', 'eks:*', 'ecr:*']
+        // }));
 
         // buildProject.addToRolePolicy(new iam.PolicyStatement(PolicyStatementEffect.Allow)
         //     .addResource('*')
@@ -136,21 +136,21 @@ export class CDKCfnPipeline extends cdk.Construct {
 
 
 
-        pipeline.addToRolePolicy(new iam.PolicyStatement({
-            resources: ['*'],
-            actions: ['s3:*']
-        }));
+        // pipeline.addToRolePolicy(new iam.PolicyStatement({
+        //     resources: ['*'],
+        //     actions: ['s3:*']
+        // }));
 
 
 
 
         pipeline.addStage({
-            stageName: 'Test',
+            stageName: 'DeployPipeline',
             actions: [ 
 
                 new actions.CloudFormationCreateUpdateStackAction({
                     actionName: 'CFN_Deploy',
-                    stackName: 'InfraDeployStack',
+                    stackName: templatePrefix,
                     templatePath: buildArtifact.atPath(templatePrefix + '.template.json'),
                     //templatePath: buildArtifact.atPath('InfraStack.template.json'),
 
@@ -181,28 +181,28 @@ export class CDKCfnPipeline extends cdk.Construct {
             ],
         });
 
-        // Prod
-        const prodStackName = 'CDK' + props.stackName + 'Prod';
+        // // Prod
+        // const prodStackName = 'CDK' + props.stackName + 'Prod';
 
-        pipeline.addStage({
-            stageName: 'Prod',
-            actions: [
-                new actions.CloudFormationCreateReplaceChangeSetAction({
-                    actionName: 'PrepareChangesProd',
-                    stackName: prodStackName,
-                    changeSetName,
-                    runOrder: 1,
-                    adminPermissions: true,
-                    templatePath: buildArtifact.atPath(templatePrefix + '.template.yaml'),
-                    //templateConfiguration: buildArtifact.atPath('StackConfig.json'),
-                }),
-                new actions.CloudFormationExecuteChangeSetAction({
-                    actionName: 'ExecuteChangesProd',
-                    stackName: prodStackName,
-                    changeSetName,
-                    runOrder: 2
-                })
-            ],
-        });
+        // pipeline.addStage({
+        //     stageName: 'Prod',
+        //     actions: [
+        //         new actions.CloudFormationCreateReplaceChangeSetAction({
+        //             actionName: 'PrepareChangesProd',
+        //             stackName: prodStackName,
+        //             changeSetName,
+        //             runOrder: 1,
+        //             adminPermissions: true,
+        //             templatePath: buildArtifact.atPath(templatePrefix + '.template.yaml'),
+        //             //templateConfiguration: buildArtifact.atPath('StackConfig.json'),
+        //         }),
+        //         new actions.CloudFormationExecuteChangeSetAction({
+        //             actionName: 'ExecuteChangesProd',
+        //             stackName: prodStackName,
+        //             changeSetName,
+        //             runOrder: 2
+        //         })
+        //     ],
+        // });
     }
 }

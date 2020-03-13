@@ -53,6 +53,7 @@ update_kubeconfig(){
     else
         aws eks update-kubeconfig --name $CLUSTER_NAME --kubeconfig $KUBECONFIG    
     fi
+
 }
 
 update_kubeconfig
