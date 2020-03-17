@@ -73,6 +73,10 @@ new InfraStack(app, 'InfraStack', {
 
 import { AppStack } from '../lib/app-pipeline';
 
-
 new AppStack(app, 'AppStack');
 
+
+import { DemoStack } from '../lib/demo-pipeline';
+
+
+new DemoStack(app, 'DemoStack');

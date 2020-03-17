@@ -7,7 +7,7 @@ class MyChart extends Chart {
     super(scope, name);
 
     // define constructs here
-    new WebService(this, 'hello', { image: 'paulbouwer/hello-kubernetes:1.5', replicas: 2 });
+    new WebService(this, 'hello', { image: 'paulbouwer/hello-kubernetes:1.5', containerPort: 5000, replicas: 2 });
     // new WebService(this, 'ghost', { image: 'ghost', containerPort: 2368 });
   }
 }

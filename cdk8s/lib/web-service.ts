@@ -36,9 +36,13 @@ export class WebService extends Construct {
 
     const port = options.port || 80;
     const containerPort = options.containerPort || 8080;
-    const label = { app: this.node.uniqueId };
+    const appName = 'app';
+    const label = { app: appName };
 
     new Service(this, 'service', {
+//      metadata: {
+//        name: appName
+//      },
       spec: {
         type: 'LoadBalancer',
         ports: [ { port, targetPort: IntOrString.fromNumber(containerPort) } ],
@@ -48,10 +52,10 @@ export class WebService extends Construct {
 
     new Deployment(this, 'deployment', {
       metadata: {
-        name: 'eks-demo-app',
+        name: appName,
       },
       spec: {
-        replicas: 1,
+        replicas: options.replicas,
         selector: {
           matchLabels: label
         },
@@ -60,7 +64,7 @@ export class WebService extends Construct {
           spec: {
             containers: [
               {
-                name: 'app',
+                name: appName,
                 // name: this.node.id,
                 image: options.image,
                 ports: [ { containerPort } ]
