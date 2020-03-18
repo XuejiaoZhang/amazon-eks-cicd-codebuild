@@ -49,6 +49,7 @@ export class DemoStack extends cdk.Stack {
         owner: 'XuejiaoZhang',
         repo: 'amazon-eks-cicd-codebuild',
         oauthToken: githubAccessToken,
+        branch: 'master', // default: 'master'
         output: sourceOutput
     });
 

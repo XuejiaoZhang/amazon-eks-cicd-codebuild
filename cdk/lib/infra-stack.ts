@@ -25,17 +25,15 @@ export class InfraStack extends cdk.Stack {
         // });
 
 
-        // const clusterAdmin = new iam.Role(this, 'AdminRole', {
-        //   //assumedBy: new iam.AccountRootPrincipal(),
-        //   assumedBy:  new iam.ServicePrincipal('codebuild.amazonaws.com') // CodeBuild eks assume role and update kuebe config
-        // });
-        //'codepipeline.amazonaws.com
+        const clusterAdmin = new iam.Role(this, 'AdminRole', {
+          assumedBy: new iam.AccountRootPrincipal(),
+        });
 
         const cluster = new eks.Cluster(this, 'Cluster', {
           clusterName: 'eks-for-demo-app',
           vpc,
           defaultCapacity: 2,
-          //mastersRole: clusterAdmin,
+          mastersRole: clusterAdmin,
           outputClusterName: true,
         });
 
